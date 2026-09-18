@@ -1,0 +1,29 @@
+column_name,data_type,description,range_or_categories,missing_allowed,notes
+student_id,string,Unique synthetic student identifier,"S100000 - S101199",No,Not used as a model feature; drop before training
+age,integer,Student age in years,20-25,No,
+degree,categorical,Current degree program,"B.Tech, B.Sc, M.Tech, MCA, BCA",No,One-hot encode
+cgpa,float,Cumulative GPA on a 10-point scale,5.0-10.0,Yes (~3%),Impute with median
+python_score,float,Self/test-assessed Python proficiency,0-10,No,
+sql_score,float,Self/test-assessed SQL proficiency,0-10,No,
+statistics_score,float,Self/test-assessed statistics proficiency,0-10,No,
+ml_score,float,Self/test-assessed classical ML proficiency,0-10,No,
+dl_score,float,Self/test-assessed deep learning proficiency,0-10,No,
+genai_score,float,Self/test-assessed Generative AI proficiency,0-10,No,
+ml_projects,integer,Total number of ML projects completed,0+,No,Poisson-distributed count
+end_to_end_projects,integer,Projects that went from data to a working pipeline (subset of ml_projects),0+,No,Always <= ml_projects
+deployed_projects,integer,Projects actually deployed (subset of end_to_end_projects),0+,No,Always <= end_to_end_projects
+kaggle_competitions,integer,Number of Kaggle competitions entered,0+,No,
+best_competition_rank,float,Best rank achieved in a competition (lower is better),1-500,Yes (if no competitions entered),NaN means never competed - impute or use a missing-indicator flag
+hackathons_attended,integer,Total hackathons attended,0+,No,Core variable for the hackathon-employability analysis
+hackathons_won,integer,Hackathons won (subset of attended),0+,No,Always <= hackathons_attended
+finalist_status,integer,Number of times reached finals (includes wins),0+,No,Always <= hackathons_attended
+github_projects,integer,Public GitHub repositories/projects,0+,No,
+internship_months,integer,Total months of internship experience,0+,No,
+certifications,integer,Number of relevant certifications completed,0+,Yes (~3%),Impute with 0 or median
+ml_interview_score,float,Performance in mock/real ML interviews,0-10,No,
+communication_score,float,Communication skill assessment,0-10,Yes (~3.5%),Impute with median
+dsa_score,float,Data Structures & Algorithms proficiency,0-10,No,
+resume_score,float,Resume quality score (recruiter/rubric-based),0-10,Yes (~3%),Impute with median
+mock_interview_score,float,Overall mock interview performance,0-10,No,
+job_ready,integer (target 1),Binary label: 0 = Not job-ready, 1 = Job-ready,"0, 1",No,Primary classification target
+career_track,integer (target 2),"Recommended career track: 0=Data Analyst, 1=Data Scientist, 2=ML Engineer, 3=Deep Learning Engineer, 4=GenAI Engineer, 5=Not Yet Ready","0-5",No,Secondary (multi-class) classification target; 5 is assigned whenever job_ready=0

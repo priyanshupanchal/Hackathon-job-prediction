@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Hackathon Career Readiness</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Registration-specific styles */
+        .reg-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .reg-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+        }
+
+        .reg-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .reg-header .reg-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .reg-header h1 {
+            color: #fff;
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 0.4rem;
+        }
+
+        .reg-header p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .reg-form .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .reg-form .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            margin-bottom: 1.1rem;
+        }
+
+        .reg-form label {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .reg-form .input-wrap {
+            position: relative;
+        }
+
+        .reg-form .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 0.9rem;
+        }
+
+        .reg-form input[type="text"],
+        .reg-form input[type="email"],
+        .reg-form input[type="tel"],
+        .reg-form input[type="password"],
+        .reg-form input[type="date"],
+        .reg-form input[type="number"],
+        .reg-form textarea,
+        .reg-form select {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.6rem;
+            padding: 0.7rem 0.9rem 0.7rem 2.5rem;
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.25s, box-shadow 0.25s;
+            box-sizing: border-box;
+        }
+
+        .reg-form textarea {
+            padding-left: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .reg-form select {
+            padding-left: 2.5rem;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .reg-form input:focus,
+        .reg-form textarea:focus,
+        .reg-form select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .reg-form input::placeholder,
+        .reg-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Gender radio group */
+        .gender-group {
+            display: flex;
+            gap: 1.5rem;
+            padding: 0.65rem 0.9rem;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0.6rem;
+        }
+
+        .gender-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .gender-group input[type="radio"] {
+            accent-color: #6366f1;
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            background: none;
+            border: none;
+        }
+
+        /* Error/success messages */
+        .field-error {
+            color: #f87171;
+            font-size: 0.78rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+
+        .form-message {
+            text-align: center;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .form-message.error {
+            background: rgba(248, 113, 113, 0.15);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #f87171;
+        }
+
+        .form-message.success {
+            background: rgba(74, 222, 128, 0.15);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            color: #4ade80;
+        }
+
+        /* Submit button */
+        .reg-submit {
+            width: 100%;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 0.6rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+            transition: opacity 0.2s, transform 0.2s;
+            margin-top: 0.5rem;
+        }
+
+        .reg-submit:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .reg-submit:active {
+            transform: translateY(0);
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.25rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.88rem;
+        }
+
+        .login-link a {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 560px) {
+            .reg-form .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reg-page">
+        <div class="reg-card">
+
+            <div class="reg-header">
+                <div class="reg-icon">
+                    <i class="fa-solid fa-user-plus"></i>
+                </div>
+                <h1>Create Account</h1>
+                <p>Join the Hackathon Career Readiness Platform</p>
+            </div>
+
+            <div class="form-message" id="formMessage"></div>
+
+            <form id="registrationForm" action="http://localhost/hackathon-employability-ml/registration.php" method="post" class="reg-form" novalidate>
+
+                <!-- First & Last Name -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fname">First Name</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="fname" name="FirstName" placeholder="First name" maxlength="50">
+                        </div>
+                        <span class="field-error" id="fnameError">First name is required.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lname">Last Name</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-user"></i>
+                            <input type="text" id="lname" name="LastName" placeholder="Last name" maxlength="50">
+                        </div>
+                        <span class="field-error" id="lnameError">Last name is required.</span>
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" name="Email" placeholder="you@example.com" maxlength="100">
+                    </div>
+                    <span class="field-error" id="emailError">Enter a valid email address.</span>
+                </div>
+
+                <!-- Mobile -->
+                <div class="form-group">
+                    <label for="mobile">Mobile Number</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-phone"></i>
+                        <input type="tel" id="mobile" name="Mobile" placeholder="10-digit mobile number" maxlength="15">
+                    </div>
+                    <span class="field-error" id="mobileError">Enter a valid 10-digit mobile number.</span>
+                </div>
+
+                <!-- Gender & DOB -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <div class="gender-group">
+                            <label>
+                                <input type="radio" id="male" name="Gender" value="male"> Male
+                            </label>
+                            <label>
+                                <input type="radio" id="female" name="Gender" value="female"> Female
+                            </label>
+                            <label>
+                                <input type="radio" id="other" name="Gender" value="other"> Other
+                            </label>
+                        </div>
+                        <span class="field-error" id="genderError">Please select a gender.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-calendar"></i>
+                            <input type="date" id="dob" name="DateOfBirth">
+                        </div>
+                        <span class="field-error" id="dobError">Date of birth is required.</span>
+                    </div>
+                </div>
+
+                <!-- Address -->
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <textarea id="address" name="Address" placeholder="Your full address" maxlength="200"></textarea>
+                    <span class="field-error" id="addressError">Address is required.</span>
+                </div>
+
+                <!-- City & PIN -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-city"></i>
+                            <input type="text" id="city" name="City" placeholder="City" maxlength="50">
+                        </div>
+                        <span class="field-error" id="cityError">City is required.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pin">Area PIN Code</label>
+                        <div class="input-wrap">
+                            <i class="fa-solid fa-map-pin"></i>
+                            <input type="text" id="pin" name="Areapin" placeholder="6-digit PIN" maxlength="6">
+                        </div>
+                        <span class="field-error" id="pinError">Enter a valid 6-digit PIN code.</span>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" name="Password" placeholder="Minimum 8 characters" maxlength="72">
+                        <i class="fa-solid fa-eye" id="toggleRegPassword" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);cursor:pointer;left:auto;"></i>
+                    </div>
+                    <span class="field-error" id="passwordError">Password must be at least 8 characters.</span>
+                </div>
+
+                <button type="submit" class="reg-submit" id="registerBtn">
+                    <i class="fa-solid fa-user-check"></i>&nbsp; Register Now
+                </button>
+
+            </form>
+
+            <p class="login-link">
+                Already have an account? <a href="index.html">Login here</a>
+            </p>
+
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('toggleRegPassword').addEventListener('click', function () {
+            const pwd = document.getElementById('password');
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                this.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                pwd.type = 'password';
+                this.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        // Client-side validation before submit
+        document.getElementById('registrationForm').addEventListener('submit', function (e) {
+            let valid = true;
+
+            function showError(id, show) {
+                document.getElementById(id).style.display = show ? 'block' : 'none';
+            }
+
+            const FirstName   = document.getElementById('FirstName').value.trim();
+            const LastName   = document.getElementById('LastName').value.trim();
+            const Email   = document.getElementById('Email').value.trim();
+            const Mobile  = document.getElementById('Mobile').value.trim();
+            const ender  = document.querySelector('input[name="Gender"]:checked');
+            const DateOfBirth    = document.getElementById('DateOfBirth').value;
+            const Address = document.getElementById('Address').value.trim();
+            const City    = document.getElementById('City').value.trim();
+            const Pin     = document.getElementById('Pin').value.trim();
+            const Password= document.getElementById('Password').value;
+
+            if (!FirstName)  { showError('FirstNameError', true);  valid = false; } else { showError('FirstNameError', false); }
+            if (!LastName)  { showError('LastName', true);  valid = false; } else { showError('LastNameError', false); }
+
+            const EmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!EmailRegex.test(Email)) { showError('EmailError', true); valid = false; } else { showError('EmailError', false); }
+
+            const MobileRegex = /^[6-9]\d{9}$/;
+            if (!MobileRegex.test(Mobile)) { showError('MbileError', true); valid = false; } else { showError('MobileError', false); }
+
+            if (!Gender) { showError('GenderError', true); valid = false; } else { showError('GenderError', false); }
+            if (!DateOfBirth)    { showError('DateOfBirthError', true);    valid = false; } else { showError('DateOfBirthError', false); }
+            if (!Address){ showError('AddressError', true);valid = false; } else { showError('AddressError', false); }
+            if (!City)   { showError('CityError', true);   valid = false; } else { showError('CityError', false); }
+
+            const PinRegex = /^\d{6}$/;
+            if (!pinRegex.test(pin)) { showError('PinError', true); valid = false; } else { showError('PinError', false); }
+
+            if (Password.length < 8) { showError('PasswordError', true); valid = false; } else { showError('PasswordError', false); }
+
+            if (!valid) {
+                e.preventDefault();
+                const msg = document.getElementById('formMessage');
+                msg.className = 'form-message error';
+                msg.textContent = 'Please fix the errors above before submitting.';
+                msg.style.display = 'block';
+            }
+        });
+    </script>
+
+</body>
+</html>

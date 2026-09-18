@@ -1,0 +1,68 @@
+{
+  "n_train": 960,
+  "n_test": 240,
+  "numeric_features": [
+    "age",
+    "cgpa",
+    "python_score",
+    "sql_score",
+    "statistics_score",
+    "ml_score",
+    "dl_score",
+    "genai_score",
+    "ml_projects",
+    "end_to_end_projects",
+    "deployed_projects",
+    "kaggle_competitions",
+    "best_competition_rank",
+    "hackathons_attended",
+    "hackathons_won",
+    "finalist_status",
+    "github_projects",
+    "internship_months",
+    "certifications",
+    "ml_interview_score",
+    "communication_score",
+    "dsa_score",
+    "resume_score",
+    "mock_interview_score",
+    "hackathon_win_rate",
+    "hackathon_finalist_rate",
+    "has_won_hackathon",
+    "deployment_rate",
+    "end_to_end_rate",
+    "has_deployed_project",
+    "has_competed_kaggle",
+    "competition_rank_missing",
+    "avg_core_skill_score",
+    "real_world_exposure",
+    "avg_interview_readiness"
+  ],
+  "categorical_features": [
+    "degree"
+  ],
+  "job_ready_model": {
+    "algorithm": "RandomForestClassifier (Tuned)",
+    "best_params": {
+      "n_estimators": 300,
+      "min_samples_split": 2,
+      "min_samples_leaf": 2,
+      "max_features": "log2",
+      "max_depth": 8
+    },
+    "cv_roc_auc": 0.79849417795186,
+    "test_metrics": {
+      "accuracy": 0.7416666666666667,
+      "precision": 0.7478260869565218,
+      "recall": 0.7226890756302521,
+      "f1": 0.7350427350427351,
+      "roc_auc": 0.8248489478436003,
+      "pr_auc": 0.8414649751399096
+    }
+  },
+  "career_track_model": {
+    "algorithm": "LogisticRegression",
+    "test_accuracy": 0.6458333333333334,
+    "test_macro_f1": 0.5289797087604993
+  }
+}

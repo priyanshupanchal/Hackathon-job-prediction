@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Hackathon Career Readiness | IITM</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
+</head>
+
+<body>
+
+    <main class="page">
+
+        <!-- LEFT SECTION -->
+        <section class="left-section">
+
+            <div class="college-brand">
+                <img src="logo.png" alt="IITM Logo" class="college-logo">
+
+                <h3>
+                    Institute of Information Technology & Management
+                </h3>
+
+                <p>Affiliated to GGSIPU, Delhi</p>
+            </div>
+
+            <p class="small-title">AI-POWERED PLATFORM</p>
+
+            <h1 class="project-title">
+                HACKATHON SUCCESS &
+                <span>CAREER READINESS</span>
+                PREDICTION SYSTEM
+            </h1>
+
+            <div class="title-line"></div>
+
+            <p class="description">
+                An intelligent platform to predict job readiness,
+                analyze hackathon impact, and recommend the best
+                career path in <strong>Data & AI.</strong>
+            </p>
+
+            <div class="features">
+
+                <div class="feature">
+                    <div class="feature-icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+
+                    <div>
+                        <h3>Predict Career Readiness</h3>
+                        <p>
+                            Evaluate skills, projects, internships
+                            and experience to know your job readiness.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon purple">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+
+                    <div>
+                        <h3>Hackathon Insights</h3>
+                        <p>
+                            Understand how hackathon participation
+                            contributes to employability.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon pink">
+                        <i class="fa-solid fa-briefcase"></i>
+                    </div>
+
+                    <div>
+                        <h3>Best Career Path</h3>
+                        <p>
+                            Get an AI-recommended career track
+                            based on your skills and strengths.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="quote-box">
+                <i class="fa-solid fa-brain"></i>
+
+                <div>
+                    <p>
+                        Your Skills + Projects + Experience
+                        <strong>= Your Future</strong>
+                    </p>
+
+                    <span>Make every project count!</span>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- RIGHT SECTION -->
+        <section class="right-section">
+
+            <!-- LOGIN CARD -->
+            <div class="login-card">
+
+                <div class="user-icon">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+
+                <h2>Welcome Back!</h2>
+
+                <p class="login-subtitle">
+                    Login to access your personalized dashboard
+                </p>
+
+                <p style="text-align:center;font-size:0.85rem;margin-bottom:0.5rem;color:rgba(255,255,255,0.5)">
+                    Don't have an account? <a href="registration.html" style="color:#818cf8;font-weight:600;">Register now</a>
+                </p>
+
+                <div id="loginError" style="display:none;background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.3);color:#f87171;border-radius:0.5rem;padding:0.6rem 0.9rem;font-size:0.88rem;margin-bottom:0.75rem;text-align:center;"></div>
+
+                <form id="loginForm" action="http://localhost/hackathon-employability-ml/login.php" method="post">
+
+                    <div class="input-group">
+                        <label for="username">Username</label>
+
+                        <div class="input-box">
+                            <i class="fa-solid fa-user"></i>
+
+                            <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                placeholder="Enter your email address"
+                                required
+                            >
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password</label>
+
+                        <div class="input-box">
+                            <i class="fa-solid fa-lock"></i>
+
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                required
+                            >
+
+                            <i
+                                class="fa-solid fa-eye password-eye"
+                                id="togglePassword"
+                            ></i>
+                        </div>
+                    </div>
+
+                    <div class="login-options">
+
+                        <label class="remember">
+                            <input type="checkbox">
+                            Remember me
+                        </label>
+
+                        <a href="#">Forgot Password?</a>
+
+                    </div>
+
+                    <button type="submit" class="login-button">
+                        LOGIN
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+
+
+                    <p class="secure-message">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        Your data is secure and private
+                    </p>
+
+                    <p id="loginMessage"></p>
+
+                </form>
+
+            </div>
+
+
+            <!-- TEAM CARD -->
+            <div class="team-card">
+
+                <h2>Meet Our Team</h2>
+
+                <div class="team-members">
+
+                    <!-- TEAM LEADER -->
+                    <div class="team-member leader">
+
+                        <div class="member-icon-wrapper">
+
+                            <div class="member-icon">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+
+                            <span class="leader-star">
+                                <i class="fa-solid fa-star"></i>
+                            </span>
+
+                        </div>
+
+                        <h3>Shilpi</h3>
+                        <p>Team Leader</p>
+
+                    </div>
+
+
+                    <!-- MEMBER 1 -->
+                    <div class="team-member">
+
+                        <div class="member-icon-wrapper">
+                            <div class="member-icon">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+
+                        <h3>Priyanshu</h3>
+                        <p>Team Member</p>
+
+                    </div>
+
+
+                    <!-- MEMBER 2 -->
+                    <div class="team-member">
+
+                        <div class="member-icon-wrapper">
+                            <div class="member-icon">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+
+                        <h3>Dushyant</h3>
+                        <p>Team Member</p>
+
+                    </div>
+
+
+                    <!-- MEMBER 3 -->
+                    <div class="team-member">
+
+                        <div class="member-icon-wrapper">
+                            <div class="member-icon">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+
+                        <h3>Vedika</h3>
+                        <p>Team Member</p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+        <i class="fa-solid fa-trophy"></i>
+
+        <strong>Hack. Build. Learn. Grow.</strong>
+
+        <span>|</span>
+
+        Turning Hackathons into Career Opportunities
+    </footer>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
