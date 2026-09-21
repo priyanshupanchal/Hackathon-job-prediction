@@ -129,21 +129,21 @@ the same pipeline applies unchanged.
 ## Team Responsibilities
 
 ### Shilpi — Team Leader (Project Manager + ML Integration + Deployment)
-- Finalized architecture, managed GitHub repo, reviewed all PRs
-- Integrated all modules, built the Streamlit dashboard
-- Handled cloud deployment, final README, final testing, demo prep
+- Trained and compared baseline + advanced classification models
+- Cross-validation, hyperparameter tuning, binary + multi-class evaluation
+- Implemented explainability (permutation importance / SHAP), error analysis
 
 ### Priyanshu — Data & Backend Engineer (EDA + Backend + SQL Server Backend)
 - Handled exploratory data analysis, data extraction, and structural pipelining
 - Built the backend system workflow and application programming infrastructure
 - Designed, managed, and integrated the production SQL Server database system
 
-### Dushant — ML Engineer (Evaluation + Explainable AI)
-- Trained and compared baseline + advanced classification models
-- Cross-validation, hyperparameter tuning, binary + multi-class evaluation
-- Implemented explainability (permutation importance / SHAP), error analysis
+### Dushyant Jangra — ML Engineer (Evaluation + Explainable AI)
+- Finalized architecture, managed GitHub repo, reviewed all PRs
+- Integrated all modules, built the Streamlit dashboard
+- Handled cloud deployment, final README, final testing, demo prep
 
-### Vedika — Documentation
+### Vedika Vyas — Documentation
 - Managed and authored all project documentation, README guides, and project disclosure logs
 
 
