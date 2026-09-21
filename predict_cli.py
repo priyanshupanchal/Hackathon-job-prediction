@@ -1,61 +1,41 @@
 """
-predict_api.py
+predict_cli.py
 --------------
-Lightweight Flask API that bridges the PHP front-end with the Python ML models.
+Standalone CLI bridge between PHP and the ML models.
+PHP calls this script directly via proc_open() or exec() — NO Flask server needed.
 
-Start it with:
-    python predict_api.py
-    (or: venv/Scripts/python predict_api.py)
+Usage (called by predict.php via proc_open):
+    echo '<json>' | python predict_cli.py
 
-It listens on http://127.0.0.1:5001
-
-PHP pages call:
-    POST /predict  →  JSON body with student features  →  JSON prediction result
+Reads JSON payload from stdin, outputs single-line JSON to stdout.
+Errors: JSON {"error": "..."} to stdout (never raises uncaught exception).
 """
 
-import os
 import sys
+import os
 import json
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 
-# Make src/ importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
-
-from predict import predict_student  # noqa: E402
-
-app = Flask(__name__)
-CORS(app, origins=["http://localhost", "http://127.0.0.1", "http://localhost:80", "null"])  # allow PHP on same host + browser pings
+# Make src/ importable regardless of CWD
+_BASE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(_BASE, "src"))
 
 
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok", "message": "Prediction API is running"})
+def main():
+    # Read JSON from stdin (safe for all shells, handles unicode, large payloads)
+    try:
+        raw_json = sys.stdin.read().strip()
+        if not raw_json:
+            print(json.dumps({"error": "Empty input received by predict_cli.py"}))
+            sys.exit(1)
+        data = json.loads(raw_json)
+    except json.JSONDecodeError as e:
+        print(json.dumps({"error": f"Invalid JSON input: {e}"}))
+        sys.exit(1)
+    except Exception as e:
+        print(json.dumps({"error": f"Input error: {e}"}))
+        sys.exit(1)
 
-
-@app.route("/predict", methods=["POST"])
-def predict():
-    """
-    Accepts JSON body with student features and returns prediction.
-
-    Required JSON fields (all optional — defaults are applied for missing ones):
-        age, cgpa, degree,
-        python_score, sql_score, statistics_score, ml_score, dl_score, genai_score,
-        ml_projects, end_to_end_projects, deployed_projects,
-        kaggle_competitions, best_competition_rank,
-        hackathons_attended, hackathons_won, finalist_status,
-        github_projects, internship_months, certifications,
-        ml_interview_score, communication_score, dsa_score,
-        resume_score, mock_interview_score
-    """
-    if not request.is_json:
-        return jsonify({"error": "Content-Type must be application/json"}), 400
-
-    data = request.get_json(silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid JSON body"}), 400
-
-    # Cast numeric strings to proper types (PHP json_encode sends numbers as-is)
+    # ── Parse fields (same logic as predict_api.py) ────────────────────────
     numeric_int_fields = [
         "age", "ml_projects", "end_to_end_projects", "deployed_projects",
         "kaggle_competitions", "best_competition_rank", "hackathons_attended",
@@ -87,18 +67,22 @@ def predict():
     if "degree" in data and data["degree"]:
         student_input["degree"] = str(data["degree"]).strip()
 
-    # best_competition_rank = 0 means "never competed" -> pass None
+    # best_competition_rank = 0 means "never competed" → pass None
     if student_input.get("best_competition_rank", 0) == 0:
         student_input["best_competition_rank"] = None
 
+    # ── Run prediction ──────────────────────────────────────────────────────
     try:
+        from predict import predict_student
         result = predict_student(student_input)
     except FileNotFoundError as e:
-        return jsonify({"error": f"Model file not found: {str(e)}. Run python src/train.py first."}), 500
+        print(json.dumps({"error": f"Model file not found: {e}. Run: python src/train.py"}))
+        sys.exit(1)
     except Exception as e:
-        return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
+        print(json.dumps({"error": f"Prediction failed: {e}"}))
+        sys.exit(1)
 
-    # Convert numpy types to native Python for JSON serialisation
+    # ── Serialise numpy types ───────────────────────────────────────────────
     def _safe(obj):
         if hasattr(obj, "item"):
             return obj.item()
@@ -122,13 +106,8 @@ def predict():
         ],
     }
 
-    return jsonify(response)
+    print(json.dumps(response))
 
 
 if __name__ == "__main__":
-    print("=" * 60)
-    print("  Hackathon Career Readiness - Prediction API")
-    print("  Listening on http://127.0.0.1:5001")
-    print("  Press Ctrl+C to stop.")
-    print("=" * 60)
-    app.run(host="127.0.0.1", port=5001, debug=False)
+    main()

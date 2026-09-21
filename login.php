@@ -48,8 +48,10 @@ if ($stmt->num_rows === 1) {
         $con->close();
 
         if ($hasProfile) {
-            header('Location: http://localhost/hackathon-employability-ml/dashboard.php');
+            // Send directly to AI prediction page so user sees results immediately
+            header('Location: http://localhost/hackathon-employability-ml/predict.php');
         } else {
+            // New user — must fill profile first before AI can predict
             header('Location: http://localhost/hackathon-employability-ml/student_details.php');
         }
         exit();

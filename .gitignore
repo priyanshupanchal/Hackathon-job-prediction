@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Environment variables
+.env
+
+# Large / generated artifacts (comment these out if you WANT to commit
+# trained models so Streamlit Cloud can use them directly)
+# models/*.joblib
+
+# IDE
+.vscode/
+.idea/

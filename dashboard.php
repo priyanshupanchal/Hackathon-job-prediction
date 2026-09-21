@@ -11,10 +11,25 @@ $userName  = htmlspecialchars($_SESSION['user_name']  ?? 'User');
 $userEmail = htmlspecialchars($_SESSION['user_email'] ?? '');
 $userId    = (int) $_SESSION['user_id'];
 
-// ── Load student profile (if exists) ─────────────────────────
-$profile = null;
+// ── Load user registration info (mobile, full name) ───────────────────────
+$userMobile   = '';
+$userLastName = '';
+$prediction   = null;   // cached AI prediction
+$profile      = null;
+
 $db = mysqli_connect("localhost", "root", "", "hackathon-employability-ml");
 if ($db) {
+    $ru = $db->prepare("SELECT LastName, Mobile FROM registration WHERE id = ?");
+    $ru->bind_param("i", $userId);
+    $ru->execute();
+    $ru->bind_result($r_last, $r_mobile);
+    if ($ru->fetch()) {
+        $userLastName = htmlspecialchars($r_last   ?? '');
+        $userMobile   = htmlspecialchars($r_mobile ?? '');
+    }
+    $ru->close();
+
+    // ── Load student profile (if exists) ─────────────────────────
     $ps = $db->prepare("SELECT degree, college, cgpa, graduation_year, skills, experience, certificates, cv_filename FROM student_details WHERE user_id = ?");
     $ps->bind_param("i", $userId);
     $ps->execute();
@@ -32,6 +47,28 @@ if ($db) {
         ];
     }
     $ps->close();
+
+    // ── Load cached AI prediction (if exists) ────────────────────
+    $pr = $db->prepare("SELECT job_ready, job_ready_probability, career_track_label,
+        career_track_probabilities, top_positive_factors, areas_to_improve
+        FROM prediction_results WHERE user_id = ?");
+    if ($pr) {
+        $pr->bind_param("i", $userId);
+        $pr->execute();
+        $pr->bind_result($jr, $jrp, $ctl, $ctp_json, $tpf_json, $ati_json);
+        if ($pr->fetch()) {
+            $prediction = [
+                'job_ready'                 => (bool) $jr,
+                'job_ready_probability'     => (float) $jrp,
+                'career_track_label'        => $ctl,
+                'career_track_probabilities'=> json_decode($ctp_json ?: '{}', true),
+                'top_positive_factors'      => json_decode($tpf_json ?: '[]', true),
+                'areas_to_improve'          => json_decode($ati_json ?: '[]', true),
+            ];
+        }
+        $pr->close();
+    }
+
     $db->close();
 }
 ?>
@@ -228,6 +265,22 @@ if ($db) {
             transition: background 0.2s;
         }
         .logout-btn:hover { background: rgba(248,113,113,0.22); }
+
+        .nav-apply-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(52,211,153,0.12);
+            border: 1px solid rgba(52,211,153,0.25);
+            color: #6ee7b7;
+            border-radius: 999px;
+            padding: 0.4rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .nav-apply-btn:hover { background: rgba(52,211,153,0.22); }
 
         /* ── HERO ── */
         .hero {
@@ -432,14 +485,17 @@ if ($db) {
             <span>Hackathon Career Readiness</span>
         </div>
         <div class="nav-right">
-            <a href="student_details.php" class="nav-profile-btn">
+            <a href="job_applicability.php" class="nav-apply-btn" id="deptApplyNavBtn">
+                <i class="fa-solid fa-briefcase"></i> Job Applicability
+            </a>
+            <a href="student_details.php" class="nav-profile-btn" id="myProfileNavBtn">
                 <i class="fa-solid fa-id-card"></i> My Profile
             </a>
             <div class="user-pill">
                 <i class="fa-solid fa-circle-user"></i>
                 Welcome, <strong><?= $userName ?></strong>
             </div>
-            <a href="logout.php" class="logout-btn">
+            <a href="logout.php" class="logout-btn" id="logoutBtn">
                 <i class="fa-solid fa-right-from-bracket"></i> Logout
             </a>
         </div>
@@ -453,12 +509,13 @@ if ($db) {
         </div>
         <h1>
             Hello, <?= $userName ?>! 👋<br>
-            Ready to <span>Predict Your Future?</span>
+            <?= $prediction ? 'Your <span>AI Results</span> Are Ready' : 'Ready to <span>Predict Your Future?</span>' ?>
         </h1>
         <p>
-            Use our machine learning model to assess your job readiness,
-            discover the best career track in Data & AI, and see exactly
-            how your hackathon experience stacks up.
+            <?= $prediction
+                ? 'Your job readiness score is <strong style="color:#a5b4fc">' . round($prediction['job_ready_probability'],1) . '%</strong> — career track: <strong style="color:#a5b4fc">' . htmlspecialchars($prediction['career_track_label']) . '</strong>. View your full report below.'
+                : 'Use our machine learning model to assess your job readiness, discover the best career track in Data &amp; AI, and see exactly how your hackathon experience stacks up.'
+            ?>
         </p>
 
         <!-- Success notice after profile save -->
@@ -469,10 +526,28 @@ if ($db) {
         </div>
         <?php endif; ?>
 
-        <a href="predict.php" class="launch-btn" id="launchPredictorBtn">
+        <?php if ($prediction): ?>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+            <a href="predict.php" class="launch-btn" id="launchPredictorBtn">
+                <i class="fa-solid fa-chart-line"></i>
+                View Full AI Report
+            </a>
+            <a href="job_applicability.php" id="heroJobApplyBtn" style="
+                display:inline-flex;align-items:center;gap:.6rem;
+                background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);
+                color:#6ee7b7;font-size:1rem;font-weight:700;
+                padding:.9rem 2rem;border-radius:999px;
+                text-decoration:none;transition:all .2s;
+            ">
+                <i class="fa-solid fa-briefcase"></i> Check Job Eligibility
+            </a>
+        </div>
+        <?php else: ?>
+        <a href="<?= $profile ? 'predict.php' : 'student_details.php' ?>" class="launch-btn" id="launchPredictorBtn">
             <i class="fa-solid fa-brain"></i>
-            Launch AI Predictor
+            <?= $profile ? 'Run AI Prediction' : 'Complete Profile & Predict' ?>
         </a>
+        <?php endif; ?>
     </section>
 
     <!-- PROFILE SUMMARY CARD -->
@@ -518,12 +593,196 @@ if ($db) {
         <?php endif; ?>
     </div>
 
+    <!-- ═══════════════════════════════════════════════════════
+         AI PREDICTION CARD — shows live cached result from DB
+    ═══════════════════════════════════════════════════════ -->
+    <div style="max-width:900px;margin:0 auto 2rem;padding:0 1.5rem">
+    <?php if ($prediction): ?>
+        <?php
+        $pct      = round($prediction['job_ready_probability'], 1);
+        $ready    = $prediction['job_ready'];
+        $track    = htmlspecialchars($prediction['career_track_label']);
+        $factors  = $prediction['top_positive_factors'];
+        $improve  = $prediction['areas_to_improve'];
+        $trackColors = [
+            'Data Analyst'           => '#60a5fa',
+            'Data Scientist'         => '#a78bfa',
+            'ML Engineer'            => '#f472b6',
+            'Deep Learning Engineer' => '#fb923c',
+            'GenAI Engineer'         => '#34d399',
+            'Not Yet Ready'          => '#94a3b8',
+        ];
+        $trackColor = $trackColors[$prediction['career_track_label']] ?? '#818cf8';
+        ?>
+        <div style="
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.1);
+            border-radius:1.5rem;
+            padding:1.75rem 2rem;
+            backdrop-filter:blur(16px);
+            box-shadow:0 20px 60px rgba(0,0,0,.3);
+        ">
+            <!-- Card header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;flex-wrap:wrap;gap:.75rem">
+                <div style="display:flex;align-items:center;gap:.65rem">
+                    <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:.75rem;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;box-shadow:0 0 18px rgba(99,102,241,.4)">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight:800;font-size:1rem">Your AI Prediction</div>
+                        <div style="font-size:.75rem;color:rgba(255,255,255,.45)">Last run result — <a href="predict.php" style="color:#818cf8;text-decoration:none">refresh →</a></div>
+                    </div>
+                </div>
+                <a href="predict.php" id="viewFullReportBtn" style="
+                    display:inline-flex;align-items:center;gap:.5rem;
+                    background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                    color:white;border-radius:.75rem;padding:.55rem 1.25rem;
+                    font-size:.85rem;font-weight:700;text-decoration:none;
+                    box-shadow:0 0 18px rgba(99,102,241,.35);
+                    transition:all .2s;
+                ">
+                    <i class="fa-solid fa-chart-line"></i> Full Report
+                </a>
+            </div>
+
+            <!-- Main result row -->
+            <div style="display:grid;grid-template-columns:auto 1fr auto;gap:1.5rem;align-items:center;flex-wrap:wrap" class="pred-main-row">
+
+                <!-- Score ring -->
+                <div style="text-align:center;min-width:120px">
+                    <div style="position:relative;width:120px;height:120px;margin:0 auto">
+                        <svg viewBox="0 0 120 120" width="120" height="120" style="transform:rotate(-90deg)">
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="10"/>
+                            <circle cx="60" cy="60" r="50" fill="none"
+                                stroke="url(#dashGrad)" stroke-width="10"
+                                stroke-linecap="round"
+                                stroke-dasharray="314"
+                                stroke-dashoffset="<?= round(314 * (1 - $pct/100)) ?>"
+                            />
+                            <defs>
+                                <linearGradient id="dashGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#6366f1"/>
+                                    <stop offset="100%" stop-color="#ec4899"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                            <span style="font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#6366f1,#ec4899);-webkit-background-clip:text;-webkit-text-fill-color:transparent"><?= $pct ?>%</span>
+                            <span style="font-size:.62rem;color:rgba(255,255,255,.45);margin-top:.1rem">Readiness</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:.6rem">
+                        <?php if ($ready): ?>
+                        <span style="display:inline-flex;align-items:center;gap:.35rem;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.35);color:#4ade80;border-radius:999px;padding:.3rem .85rem;font-size:.78rem;font-weight:700">
+                            <i class="fa-solid fa-circle-check"></i> Job Ready!
+                        </span>
+                        <?php else: ?>
+                        <span style="display:inline-flex;align-items:center;gap:.35rem;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.35);color:#f87171;border-radius:999px;padding:.3rem .85rem;font-size:.78rem;font-weight:700">
+                            <i class="fa-solid fa-circle-xmark"></i> Not Yet
+                        </span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Career track + strengths -->
+                <div>
+                    <div style="margin-bottom:.85rem">
+                        <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem">Best Career Track</div>
+                        <div style="display:inline-flex;align-items:center;gap:.5rem;
+                            background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+                            border-radius:.75rem;padding:.5rem 1rem">
+                            <i class="fa-solid fa-map-signs" style="color:<?= $trackColor ?>"></i>
+                            <span style="font-weight:700;font-size:.92rem;color:<?= $trackColor ?>"><?= $track ?></span>
+                        </div>
+                    </div>
+                    <?php if (!empty($factors)): ?>
+                    <div>
+                        <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem">Top Strengths</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:.4rem">
+                            <?php foreach (array_slice($factors, 0, 4) as $f):
+                                $feat = is_array($f) ? ($f['feature'] ?? '') : $f;
+                            ?>
+                            <span style="background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);color:#86efac;border-radius:.5rem;padding:.25rem .65rem;font-size:.75rem;font-weight:600">
+                                ✓ <?= htmlspecialchars($feat) ?>
+                            </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Areas to improve -->
+                <?php if (!empty($improve)): ?>
+                <div style="min-width:160px">
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem">Improve These</div>
+                    <?php foreach (array_slice($improve, 0, 3) as $area): ?>
+                    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;font-size:.8rem;color:rgba(255,255,255,.7)">
+                        <i class="fa-solid fa-arrow-trend-up" style="color:#fb923c;flex-shrink:0;font-size:.75rem"></i>
+                        <?= htmlspecialchars(is_array($area) ? ($area['feature'] ?? $area) : $area) ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+            </div><!-- /pred-main-row -->
+
+            <!-- Quick action row -->
+            <div style="display:flex;gap:.75rem;margin-top:1.25rem;padding-top:1.1rem;border-top:1px solid rgba(255,255,255,.07);flex-wrap:wrap">
+                <a href="predict.php" id="refreshPredBtn" style="
+                    display:inline-flex;align-items:center;gap:.45rem;
+                    background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);
+                    color:#a5b4fc;border-radius:.65rem;padding:.5rem 1rem;
+                    font-size:.82rem;font-weight:600;text-decoration:none;transition:background .2s
+                "><i class="fa-solid fa-rotate"></i> Re-run Prediction</a>
+                <a href="student_details.php" id="updateProfileBtn" style="
+                    display:inline-flex;align-items:center;gap:.45rem;
+                    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+                    color:rgba(255,255,255,.7);border-radius:.65rem;padding:.5rem 1rem;
+                    font-size:.82rem;font-weight:600;text-decoration:none;transition:background .2s
+                "><i class="fa-solid fa-pen-to-square"></i> Update Profile</a>
+                <a href="job_applicability.php" id="checkJobsBtn" style="
+                    display:inline-flex;align-items:center;gap:.45rem;
+                    background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);
+                    color:#6ee7b7;border-radius:.65rem;padding:.5rem 1rem;
+                    font-size:.82rem;font-weight:600;text-decoration:none;transition:background .2s
+                "><i class="fa-solid fa-briefcase"></i> Check Job Eligibility</a>
+            </div>
+        </div>
+    <?php elseif ($profile): ?>
+        <!-- Profile exists but prediction hasn't run yet -->
+        <div style="
+            background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(139,92,246,.08));
+            border:1px dashed rgba(99,102,241,.4);
+            border-radius:1.5rem;padding:1.75rem 2rem;
+            display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;
+        ">
+            <div style="width:52px;height:52px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:.85rem;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:white;flex-shrink:0;box-shadow:0 0 20px rgba(99,102,241,.4)">
+                <i class="fa-solid fa-brain"></i>
+            </div>
+            <div style="flex:1;min-width:200px">
+                <div style="font-weight:800;font-size:1rem;margin-bottom:.3rem">Your profile is ready — run the AI Prediction!</div>
+                <div style="font-size:.83rem;color:rgba(255,255,255,.55)">Click below to get your personalised job readiness score and career track recommendation.</div>
+            </div>
+            <a href="predict.php" id="runFirstPredBtn" style="
+                display:inline-flex;align-items:center;gap:.6rem;
+                background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                color:white;border-radius:1rem;padding:.85rem 1.75rem;
+                font-size:.95rem;font-weight:800;text-decoration:none;
+                box-shadow:0 0 24px rgba(99,102,241,.45);
+                animation:pulse-glow 2.5s ease-in-out infinite;
+            ">
+                <i class="fa-solid fa-brain"></i> Run AI Prediction
+            </a>
+        </div>
+    <?php endif; ?>
+    </div>
+
     <!-- STATS -->
     <div class="stats-row">
         <div class="stat-card">
             <div class="stat-icon">🎯</div>
-            <div class="stat-value" style="color:#818cf8;">~74%</div>
-            <div class="stat-label">Job Readiness Accuracy</div>
+            <div class="stat-value" style="color:#818cf8;"><?= $prediction ? round($prediction['job_ready_probability'],1).'%' : '~74%' ?></div>
+            <div class="stat-label"><?= $prediction ? 'Your Readiness Score' : 'Job Readiness Accuracy' ?></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon">📊</div>
@@ -532,8 +791,8 @@ if ($db) {
         </div>
         <div class="stat-card">
             <div class="stat-icon">🗺️</div>
-            <div class="stat-value" style="color:#f472b6;">6</div>
-            <div class="stat-label">Career Tracks</div>
+            <div class="stat-value" style="color:#f472b6;"><?= $prediction ? htmlspecialchars($prediction['career_track_label']) : '6' ?></div>
+            <div class="stat-label"><?= $prediction ? 'Your Best Track' : 'Career Tracks' ?></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon">🔍</div>
@@ -564,6 +823,14 @@ if ($db) {
             <div class="fc-icon green"><i class="fa-solid fa-brain"></i></div>
             <h3>Explainable AI Insights</h3>
             <p>SHAP-based explanations tell you which specific skills or gaps are driving the model's decision — not just a black-box score.</p>
+        </div>
+        <div class="feature-card" style="border-color:rgba(52,211,153,.2);background:linear-gradient(135deg,rgba(52,211,153,.06),rgba(16,185,129,.03))">
+            <div class="fc-icon" style="background:rgba(52,211,153,.2);color:#34d399"><i class="fa-solid fa-briefcase"></i></div>
+            <h3>Department Job Applicability</h3>
+            <p>Check if you're eligible for jobs across 6 major departments — AI/ML, Data Science, GenAI, BI, SWE, and MLOps — with a detailed criteria checklist.
+            <br><a href="job_applicability.php" id="deptApplyFeatureBtn" style="color:#34d399;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem">
+                <i class="fa-solid fa-arrow-right"></i> Check Now
+            </a></p>
         </div>
     </div>
 

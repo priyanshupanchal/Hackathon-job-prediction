@@ -62,6 +62,12 @@ $sql = "INSERT INTO `registration`
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $con->prepare($sql);
+if (!$stmt) {
+    $con->close();
+    header("Location: http://localhost/hackathon-employability-ml/registration.html?error=" . urlencode("Server error: " . $con->error));
+    exit();
+}
+
 $stmt->bind_param(
     "ssssssssss",
     $FirstName, $LastName, $Email, $Mobile, $Gender,
@@ -71,13 +77,21 @@ $stmt->bind_param(
 if ($stmt->execute()) {
     $stmt->close();
     $con->close();
+    // Redirect to login page with success message — user logs in manually
     header('Location: http://localhost/hackathon-employability-ml/index.html?registered=1');
     exit();
 } else {
-    $error_message = urlencode("Registration failed: " . $stmt->error);
+    // Handle duplicate key / other DB errors gracefully
+    $errno = $stmt->errno;
+    if ($errno === 1062) {
+        // Duplicate entry — could be duplicate email or broken AUTO_INCREMENT
+        $errMsg = "Registration failed: This email or record already exists. Please login or use a different email.";
+    } else {
+        $errMsg = "Registration failed: " . $stmt->error;
+    }
     $stmt->close();
     $con->close();
-    header("Location: http://localhost/hackathon-employability-ml/registration.html?error=" . $error_message);
+    header("Location: http://localhost/hackathon-employability-ml/registration.html?error=" . urlencode($errMsg));
     exit();
 }
 ?>

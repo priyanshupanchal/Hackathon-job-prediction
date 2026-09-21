@@ -83,7 +83,7 @@ if (!$hasProfile) {
 }
 
 
-// ── Build payload for Flask API ────────────────────────────────────────────────
+// ── Build payload for ML prediction ───────────────────────────────────────────
 $payload = [
     "age"                   => (int)   $age,
     "cgpa"                  => (float) $cgpa,
@@ -112,31 +112,76 @@ $payload = [
     "mock_interview_score"  => (float) $mock_interview_score,
 ];
 
-// ── Call Flask Prediction API ──────────────────────────────────────────────────
+// ── Run ML prediction directly via Python CLI (no separate server needed) ──────
+// This permanently fixes "AI Server Unreachable" — PHP pipes JSON to predict_cli.py
+// and reads the result back. No Flask process needs to be started or kept running.
 $apiError   = null;
 $prediction = null;
 
-$ch = curl_init("http://127.0.0.1:5001/predict");
-curl_setopt_array($ch, [
-    CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_POST           => true,
-    CURLOPT_POSTFIELDS     => json_encode($payload),
-    CURLOPT_HTTPHEADER     => ["Content-Type: application/json", "Accept: application/json"],
-    CURLOPT_TIMEOUT        => 10,
-    CURLOPT_CONNECTTIMEOUT => 5,
-]);
-$response  = curl_exec($ch);
-$httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
+$projectRoot = __DIR__;
+$jsonPayload = json_encode($payload);
 
-if ($curlError || $httpCode !== 200) {
-    $apiError = $curlError
-        ? "Could not reach the Python AI server. Make sure you have started it with: <code>python predict_api.py</code>"
-        : "API Error ({$httpCode}): " . (json_decode($response, true)['error'] ?? $response);
+// Find Python executable — try common XAMPP/system locations
+$pythonCandidates = [
+    'C:\\Users\\priya\\AppData\\Local\\Programs\\Python\\Python312\\python.exe',
+    'C:\\Users\\priya\\AppData\\Local\\Programs\\Python\\Python313\\python.exe',
+    'C:\\Python312\\python.exe',
+    'C:\\Python313\\python.exe',
+    'C:\\Python311\\python.exe',
+    'C:\\Python310\\python.exe',
+    'python',   // system PATH fallback
+];
+$pythonExe = 'python'; // default
+foreach ($pythonCandidates as $candidate) {
+    if ($candidate === 'python' || file_exists($candidate)) {
+        $pythonExe = $candidate;
+        break;
+    }
+}
+
+$cliScript = $projectRoot . DIRECTORY_SEPARATOR . 'predict_cli.py';
+
+// Use proc_open so we can pipe JSON via stdin safely (no shell-escaping issues)
+$descriptors = [
+    0 => ['pipe', 'r'],  // stdin  ← we write JSON here
+    1 => ['pipe', 'w'],  // stdout → we read the result
+    2 => ['pipe', 'w'],  // stderr → capture errors
+];
+
+// Build command — quote executable path if it contains spaces
+$cmd = (strpos($pythonExe, ' ') !== false)
+    ? '"' . $pythonExe . '" "' . $cliScript . '"'
+    : $pythonExe . ' "' . $cliScript . '"';
+
+$proc = proc_open($cmd, $descriptors, $pipes, $projectRoot);
+
+if (is_resource($proc)) {
+    fwrite($pipes[0], $jsonPayload);
+    fclose($pipes[0]);
+
+    $rawOutput = stream_get_contents($pipes[1]);
+    $stderrOut = stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    $exitCode = proc_close($proc);
+
+    $rawOutput = trim($rawOutput);
+    if ($rawOutput !== '') {
+        $decoded = json_decode($rawOutput, true);
+        if ($decoded && isset($decoded['error'])) {
+            $apiError = 'ML Error: ' . htmlspecialchars($decoded['error']);
+        } elseif ($decoded) {
+            $prediction = $decoded;
+        } else {
+            $apiError = 'Invalid response from ML engine. Raw: ' . htmlspecialchars(substr($rawOutput, 0, 200));
+        }
+    } else {
+        $apiError = 'ML engine produced no output.'
+            . ($stderrOut ? ' Stderr: ' . htmlspecialchars(substr($stderrOut, 0, 300)) : '');
+    }
 } else {
-    $prediction = json_decode($response, true);
-    if (!$prediction) $apiError = "Invalid response from AI server.";
+    $apiError = 'Failed to start Python ML engine. Ensure Python is installed at: ' . htmlspecialchars($pythonExe);
 }
 
 // ── Cache result to DB (prediction_results) ────────────────────────────────────
@@ -252,6 +297,8 @@ $fromSave = (($_GET['from'] ?? '') === 'save');
         .np-text:hover { background:rgba(255,255,255,.12); }
         .np-red    { background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.25); color:#f87171; }
         .np-red:hover { background:rgba(248,113,113,.22); }
+        .np-emerald { background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.25); color:#6ee7b7; }
+        .np-emerald:hover { background:rgba(52,211,153,.22); }
 
         /* ── PAGE ── */
         .page { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; }
@@ -425,10 +472,44 @@ $fromSave = (($_GET['from'] ?? '') === 'save');
             color:#0a0818; box-shadow:0 0 20px rgba(251,191,36,.3);
         }
         .btn-amber:hover { transform:translateY(-2px); box-shadow:0 0 32px rgba(251,191,36,.5); }
+        .btn-emerald {
+            background:linear-gradient(135deg,#10b981,#4ade80);
+            color:#022c22; box-shadow:0 0 20px rgba(52,211,153,.3);
+        }
+        .btn-emerald:hover { transform:translateY(-2px); box-shadow:0 0 32px rgba(52,211,153,.5); }
         .btn-outline {
             background:rgba(255,255,255,.06); border:1px solid var(--border); color:var(--text);
         }
         .btn-outline:hover { background:rgba(255,255,255,.12); }
+
+        /* ── JOB APPLICABILITY CTA ── */
+        .job-apply-cta {
+            display: flex; align-items: center; gap: 1.25rem;
+            background: linear-gradient(135deg, rgba(16,185,129,.12), rgba(52,211,153,.06));
+            border: 1px solid rgba(52,211,153,.3);
+            border-radius: 1.2rem; padding: 1.2rem 1.5rem;
+            margin-bottom: 1.75rem; animation: ctaPulse 3s ease-in-out infinite;
+        }
+        @keyframes ctaPulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+            50%      { box-shadow: 0 0 24px 0 rgba(52,211,153,.15); }
+        }
+        .cta-icon {
+            width: 48px; height: 48px; border-radius: .85rem; flex-shrink: 0;
+            background: rgba(52,211,153,.18); color: #34d399;
+            display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+        }
+        .cta-text { flex: 1; }
+        .cta-text h4 { font-size: .95rem; font-weight: 700; margin-bottom: .2rem; color: #6ee7b7; }
+        .cta-text p  { font-size: .8rem; color: rgba(255,255,255,.55); line-height: 1.5; }
+        .cta-btn {
+            flex-shrink: 0; display: flex; align-items: center; gap: .45rem;
+            background: linear-gradient(135deg,#10b981,#4ade80); color: #022c22;
+            border-radius: .75rem; padding: .65rem 1.35rem;
+            font-size: .85rem; font-weight: 700; text-decoration: none;
+            transition: all .2s; white-space: nowrap;
+        }
+        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(52,211,153,.35); }
 
         /* ── EMPTY STATE ── */
         .empty-note { text-align:center; color:var(--muted); padding:1.5rem; font-size:.88rem; }
@@ -460,6 +541,7 @@ $fromSave = (($_GET['from'] ?? '') === 'save');
         <span>Hackathon Career Readiness</span>
     </div>
     <div class="nav-right">
+        <a href="job_applicability.php" class="nav-pill np-emerald"><i class="fa-solid fa-briefcase"></i> Job Applicability</a>
         <a href="dashboard.php"     class="nav-pill np-indigo"><i class="fa-solid fa-gauge"></i> Dashboard</a>
         <a href="student_details.php" class="nav-pill np-text"><i class="fa-solid fa-pen-to-square"></i> Edit Profile</a>
         <a href="logout.php"        class="nav-pill np-red"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
@@ -485,20 +567,35 @@ $fromSave = (($_GET['from'] ?? '') === 'save');
     </div>
     <?php endif; ?>
 
-    <?php if ($apiError): ?>
-    <!-- ═══ API ERROR STATE ═══ -->
-    <div class="error-card">
-        <div class="err-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <h2>AI Server Unreachable</h2>
-        <p><?= $apiError ?></p>
-        <p>Open a new terminal in the project root and run:</p>
-        <div class="cmd-block">
-            cd C:\xampp\htdocs\hackathon-employability-ml<br>
-            python predict_api.py
+    <?php if ($prediction): ?>
+    <!-- ═══ NEXT STEP: JOB APPLICABILITY CTA ═══ -->
+    <div class="job-apply-cta" id="jobApplyCta">
+        <div class="cta-icon"><i class="fa-solid fa-briefcase"></i></div>
+        <div class="cta-text">
+            <h4>🎯 Next Step — Check Your Department Job Applicability</h4>
+            <p>Your AI prediction is ready! Now find out which of 6 major tech departments you are eligible to apply to — with a detailed eligibility checklist and open roles.</p>
         </div>
-        <p style="margin-bottom:1.5rem;font-size:.85rem">The server will start on <code>http://127.0.0.1:5001</code> — keep that window open.</p>
-        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-            <a href="predict.php" class="btn btn-primary"><i class="fa-solid fa-rotate"></i> Retry Prediction</a>
+        <a href="job_applicability.php" class="cta-btn" id="checkApplicabilityBtn">
+            <i class="fa-solid fa-arrow-right"></i> Check Now
+        </a>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($apiError): ?>
+    <!-- ═══ ML ENGINE ERROR STATE ═══ -->
+    <div class="error-card" id="errorCard">
+        <div class="err-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h2>Prediction Error</h2>
+        <p><?= $apiError ?></p>
+        <p style="font-size:.85rem;margin-bottom:1.25rem">
+            The AI prediction runs directly inside PHP — no external server is needed.
+            If you see a Python error, make sure Python and the required packages are installed:
+        </p>
+        <div class="cmd-block">
+            pip install pandas numpy scikit-learn joblib
+        </div>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:.5rem">
+            <a href="predict.php" class="btn btn-primary" id="retryBtn"><i class="fa-solid fa-rotate"></i> Retry Prediction</a>
             <a href="dashboard.php" class="btn btn-outline"><i class="fa-solid fa-gauge"></i> Back to Dashboard</a>
         </div>
     </div>
@@ -658,15 +755,88 @@ $fromSave = (($_GET['from'] ?? '') === 'save');
         </div>
     </div>
 
+    <!-- ═══ DEPARTMENT APPLICABILITY NEXT STEP ═══ -->
+    <div style="
+        background: linear-gradient(135deg, rgba(16,185,129,.13) 0%, rgba(99,102,241,.10) 100%);
+        border: 1.5px solid rgba(52,211,153,.35);
+        border-radius: 1.5rem;
+        padding: 1.75rem 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+    " id="deptNextStepSection">
+        <!-- Glow orb -->
+        <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;
+                    background:radial-gradient(circle,rgba(52,211,153,.18),transparent 70%);
+                    border-radius:50%;pointer-events:none;"></div>
+        <div style="display:flex;align-items:center;gap:1.25rem;flex-wrap:wrap">
+            <div style="
+                width:56px;height:56px;border-radius:1rem;flex-shrink:0;
+                background:linear-gradient(135deg,#10b981,#34d399);
+                display:flex;align-items:center;justify-content:center;
+                font-size:1.5rem;color:#022c22;
+                box-shadow:0 0 24px rgba(52,211,153,.35);
+            "><i class="fa-solid fa-briefcase"></i></div>
+            <div style="flex:1;min-width:200px">
+                <div style="font-size:1.05rem;font-weight:800;color:#6ee7b7;margin-bottom:.3rem">
+                    🎯 Next Step — Check Department Applicability
+                </div>
+                <div style="font-size:.85rem;color:rgba(255,255,255,.65);line-height:1.55">
+                    Your AI prediction score is ready! Now discover which of <strong style="color:#a7f3d0">6 major tech departments</strong>
+                    you qualify for — with a full eligibility checklist, match score, and open job roles for each.
+                </div>
+            </div>
+            <a href="job_applicability.php" id="deptApplicabilityBtn"
+               style="
+                flex-shrink:0;
+                display:inline-flex;align-items:center;gap:.6rem;
+                background:linear-gradient(135deg,#10b981,#4ade80);
+                color:#022c22;border-radius:1rem;
+                padding:.85rem 1.75rem;
+                font-size:.95rem;font-weight:800;
+                text-decoration:none;
+                box-shadow:0 0 28px rgba(52,211,153,.4);
+                transition:all .25s;
+                white-space:nowrap;
+               "
+               onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 0 40px rgba(52,211,153,.6)';"
+               onmouseout="this.style.transform='';this.style.boxShadow='0 0 28px rgba(52,211,153,.4)';">
+                <i class="fa-solid fa-arrow-right-long"></i> Check Department Applicability
+            </a>
+        </div>
+        <!-- Mini hint row -->
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1.2rem;padding-top:1rem;
+                    border-top:1px solid rgba(52,211,153,.15)">
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#4ade80"></i> AI / ML Engineering
+            </span>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#818cf8"></i> Data Science &amp; Analytics
+            </span>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#f472b6"></i> Software Engineering
+            </span>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#34d399"></i> GenAI &amp; Deep Learning
+            </span>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#60a5fa"></i> BI &amp; Data Analytics
+            </span>
+            <span style="font-size:.78rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.4rem">
+                <i class="fa-solid fa-circle-check" style="color:#fb923c"></i> Cloud &amp; MLOps
+            </span>
+        </div>
+    </div>
+
     <!-- ACTION BUTTONS -->
     <div class="actions-row">
-        <a href="predict.php" class="btn btn-primary">
+        <a href="predict.php" class="btn btn-primary" id="reRunPredictionBtn">
             <i class="fa-solid fa-rotate"></i> Re-run Prediction
         </a>
-        <a href="student_details.php" class="btn btn-amber">
+        <a href="student_details.php" class="btn btn-amber" id="updateScoresBtn">
             <i class="fa-solid fa-pen-to-square"></i> Update My Scores
         </a>
-        <a href="dashboard.php" class="btn btn-outline">
+        <a href="dashboard.php" class="btn btn-outline" id="backToDashBtn">
             <i class="fa-solid fa-gauge"></i> Back to Dashboard
         </a>
     </div>

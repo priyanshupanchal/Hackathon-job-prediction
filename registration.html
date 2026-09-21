@@ -298,7 +298,7 @@
                     <label for="mobile">Mobile Number</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-phone"></i>
-                        <input type="tel" id="mobile" name="Mobile" placeholder="10-digit mobile number" maxlength="15">
+                        <input type="tel" id="mobile" name="Mobile" placeholder="10-digit mobile number" maxlength="10" minlength="10" pattern="[6-9][0-9]{9}" title="Enter a valid 10-digit Indian mobile number starting with 6-9">
                     </div>
                     <span class="field-error" id="mobileError">Enter a valid 10-digit mobile number.</span>
                 </div>
@@ -353,7 +353,7 @@
                         <label for="pin">Area PIN Code</label>
                         <div class="input-wrap">
                             <i class="fa-solid fa-map-pin"></i>
-                            <input type="text" id="pin" name="Areapin" placeholder="6-digit PIN" maxlength="6">
+                            <input type="text" id="pin" name="Areapin" placeholder="6-digit PIN" maxlength="6" minlength="6" pattern="[0-9]{6}" title="Enter a valid 6-digit PIN code">
                         </div>
                         <span class="field-error" id="pinError">Enter a valid 6-digit PIN code.</span>
                     </div>
@@ -364,7 +364,7 @@
                     <label for="password">Password</label>
                     <div class="input-wrap">
                         <i class="fa-solid fa-lock"></i>
-                        <input type="password" id="password" name="Password" placeholder="Minimum 8 characters" maxlength="72">
+                        <input type="password" id="password" name="Password" placeholder="Minimum 8 characters" maxlength="72" minlength="8">
                         <i class="fa-solid fa-eye" id="toggleRegPassword" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,0.35);cursor:pointer;left:auto;"></i>
                     </div>
                     <span class="field-error" id="passwordError">Password must be at least 8 characters.</span>
@@ -384,6 +384,18 @@
     </div>
 
     <script>
+        // Show server-side error from URL param (e.g. after PHP redirect)
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const err = params.get('error');
+            if (err) {
+                const msg = document.getElementById('formMessage');
+                msg.className = 'form-message error';
+                msg.textContent = decodeURIComponent(err);
+                msg.style.display = 'block';
+            }
+        })();
+
         // Toggle password visibility
         document.getElementById('toggleRegPassword').addEventListener('click', function () {
             const pwd = document.getElementById('password');
@@ -401,38 +413,64 @@
             let valid = true;
 
             function showError(id, show) {
-                document.getElementById(id).style.display = show ? 'block' : 'none';
+                const el = document.getElementById(id);
+                if (el) el.style.display = show ? 'block' : 'none';
             }
 
-            const FirstName   = document.getElementById('FirstName').value.trim();
-            const LastName   = document.getElementById('LastName').value.trim();
-            const Email   = document.getElementById('Email').value.trim();
-            const Mobile  = document.getElementById('Mobile').value.trim();
-            const ender  = document.querySelector('input[name="Gender"]:checked');
-            const DateOfBirth    = document.getElementById('DateOfBirth').value;
-            const Address = document.getElementById('Address').value.trim();
-            const City    = document.getElementById('City').value.trim();
-            const Pin     = document.getElementById('Pin').value.trim();
-            const Password= document.getElementById('Password').value;
+            // Use correct IDs that match the HTML input elements
+            const firstName  = document.getElementById('fname').value.trim();
+            const lastName   = document.getElementById('lname').value.trim();
+            const email      = document.getElementById('email').value.trim();
+            const mobile     = document.getElementById('mobile').value.trim();
+            const gender     = document.querySelector('input[name="Gender"]:checked');
+            const dob        = document.getElementById('dob').value;
+            const address    = document.getElementById('address').value.trim();
+            const city       = document.getElementById('city').value.trim();
+            const pin        = document.getElementById('pin').value.trim();
+            const password   = document.getElementById('password').value;
 
-            if (!FirstName)  { showError('FirstNameError', true);  valid = false; } else { showError('FirstNameError', false); }
-            if (!LastName)  { showError('LastName', true);  valid = false; } else { showError('LastNameError', false); }
+            // Validate First Name
+            if (!firstName)  { showError('fnameError', true);  valid = false; }
+            else             { showError('fnameError', false); }
 
-            const EmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!EmailRegex.test(Email)) { showError('EmailError', true); valid = false; } else { showError('EmailError', false); }
+            // Validate Last Name
+            if (!lastName)   { showError('lnameError', true);  valid = false; }
+            else             { showError('lnameError', false); }
 
-            const MobileRegex = /^[6-9]\d{9}$/;
-            if (!MobileRegex.test(Mobile)) { showError('MbileError', true); valid = false; } else { showError('MobileError', false); }
+            // Validate Email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) { showError('emailError', true);  valid = false; }
+            else                         { showError('emailError', false); }
 
-            if (!Gender) { showError('GenderError', true); valid = false; } else { showError('GenderError', false); }
-            if (!DateOfBirth)    { showError('DateOfBirthError', true);    valid = false; } else { showError('DateOfBirthError', false); }
-            if (!Address){ showError('AddressError', true);valid = false; } else { showError('AddressError', false); }
-            if (!City)   { showError('CityError', true);   valid = false; } else { showError('CityError', false); }
+            // Validate Mobile — must be 10 digits starting with 6-9
+            const mobileRegex = /^[6-9]\d{9}$/;
+            if (!mobileRegex.test(mobile)) { showError('mobileError', true);  valid = false; }
+            else                           { showError('mobileError', false); }
 
-            const PinRegex = /^\d{6}$/;
-            if (!pinRegex.test(pin)) { showError('PinError', true); valid = false; } else { showError('PinError', false); }
+            // Validate Gender
+            if (!gender) { showError('genderError', true);  valid = false; }
+            else         { showError('genderError', false); }
 
-            if (Password.length < 8) { showError('PasswordError', true); valid = false; } else { showError('PasswordError', false); }
+            // Validate DOB
+            if (!dob) { showError('dobError', true);  valid = false; }
+            else      { showError('dobError', false); }
+
+            // Validate Address
+            if (!address) { showError('addressError', true);  valid = false; }
+            else          { showError('addressError', false); }
+
+            // Validate City
+            if (!city) { showError('cityError', true);  valid = false; }
+            else       { showError('cityError', false); }
+
+            // Validate PIN — must be exactly 6 digits
+            const pinRegex = /^\d{6}$/;
+            if (!pinRegex.test(pin)) { showError('pinError', true);  valid = false; }
+            else                     { showError('pinError', false); }
+
+            // Validate Password
+            if (password.length < 8) { showError('passwordError', true);  valid = false; }
+            else                     { showError('passwordError', false); }
 
             if (!valid) {
                 e.preventDefault();
@@ -440,6 +478,8 @@
                 msg.className = 'form-message error';
                 msg.textContent = 'Please fix the errors above before submitting.';
                 msg.style.display = 'block';
+                // Scroll to top of form to see errors
+                msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     </script>

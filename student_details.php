@@ -70,8 +70,9 @@ if ($stmt->fetch()) {
 $stmt->close();
 $con->close();
 
-$isEdit   = $profile !== null;
-$errorMsg = htmlspecialchars($_GET['error'] ?? '');
+$isEdit    = $profile !== null;
+$errorMsg  = htmlspecialchars($_GET['error'] ?? '');
+$isNewUser = isset($_GET['new']) && $_GET['new'] === '1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -156,6 +157,16 @@ $errorMsg = htmlspecialchars($_GET['error'] ?? '');
             transition: background .2s;
         }
         .logout-btn:hover { background: rgba(248,113,113,.22); }
+        .nav-link-emerald {
+            display: flex; align-items: center; gap: .4rem;
+            background: rgba(52,211,153,.12);
+            border: 1px solid rgba(52,211,153,.25);
+            color: #6ee7b7;
+            border-radius: 999px; padding: .4rem 1rem;
+            font-size: .85rem; font-weight: 500; text-decoration: none;
+            transition: background .2s;
+        }
+        .nav-link-emerald:hover { background: rgba(52,211,153,.22); }
 
         /* ── PAGE WRAPPER ── */
         .page-wrapper {
@@ -586,12 +597,13 @@ $errorMsg = htmlspecialchars($_GET['error'] ?? '');
         <span>Hackathon Career Readiness</span>
     </div>
     <div class="nav-right">
-        <a href="dashboard.php" class="nav-link"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a href="job_applicability.php" class="nav-link-emerald" id="deptApplicabilityNavBtn"><i class="fa-solid fa-briefcase"></i> Job Applicability</a>
+        <a href="dashboard.php" class="nav-link" id="dashboardNavBtn"><i class="fa-solid fa-gauge"></i> Dashboard</a>
         <div class="user-pill">
             <i class="fa-solid fa-circle-user"></i>
             <?= $userName ?>
         </div>
-        <a href="logout.php" class="logout-btn">
+        <a href="logout.php" class="logout-btn" id="logoutNavBtn">
             <i class="fa-solid fa-right-from-bracket"></i> Logout
         </a>
     </div>
@@ -619,10 +631,34 @@ $errorMsg = htmlspecialchars($_GET['error'] ?? '');
     </div>
     <?php endif; ?>
 
+    <?php if ($isNewUser): ?>
+    <!-- Welcome banner for brand-new users arriving from registration -->
+    <div style="
+        background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(139,92,246,.10));
+        border: 1px solid rgba(99,102,241,.4);
+        border-radius: 1.1rem;
+        padding: 1.1rem 1.5rem;
+        display: flex; align-items: center; gap: 1rem;
+        margin-bottom: 1.5rem;
+        animation: fadeSlideIn .5s ease;
+    ">
+        <div style="font-size:2rem;flex-shrink:0">🎉</div>
+        <div>
+            <div style="font-weight:700;font-size:.95rem;color:#c7d2fe;margin-bottom:.25rem">
+                Welcome, <?= $userName ?>! Your account is ready.
+            </div>
+            <div style="font-size:.83rem;color:rgba(255,255,255,.6);line-height:1.5">
+                Fill in your profile below and click <strong style="color:#a5b4fc">Save &amp; Run AI Prediction</strong> —
+                your personalised career readiness score will appear <strong style="color:#a5b4fc">instantly</strong>!
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <?php if (isset($_GET['profile']) && $_GET['profile'] === 'saved'): ?>
     <div class="alert-success">
         <i class="fa-solid fa-circle-check"></i>
-        Profile saved successfully! Head to the <a href="dashboard.php" style="color:#4ade80;font-weight:700;">Dashboard</a> to launch the AI Predictor.
+        Profile saved! <a href="predict.php" style="color:#4ade80;font-weight:700;">View your AI Prediction →</a>
     </div>
     <?php endif; ?>
 
