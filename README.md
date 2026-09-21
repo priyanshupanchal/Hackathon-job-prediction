@@ -34,7 +34,7 @@ Full responsibility breakdown: see [Team Responsibilities](#team-responsibilitie
 ## Live demo
 
 - **App:** `[add your deployed Streamlit URL here after deployment]`
-- **Repo:** `[add your GitHub repo URL here]`
+- **Repo:** `[[add your GitHub repo URL here](https://github.com/priyanshupanchal/Hackathon-job-prediction)]`
 
 ## Quickstart
 
