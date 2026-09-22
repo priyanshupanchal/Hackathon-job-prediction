@@ -24,10 +24,10 @@ for the full data-integrity notes (the current dataset is synthetic).
 
 | Person | Role |
 |---|---|
-| **Shilpi** (Lead) | Project Manager, ML Integration, Dashboard Deployment |
-| **Priyanshu** | Data Engineer, EDA, backend, SQL server |
-| **Dushyant** | ML Engineer, Evaluation, Explainable AI |
-| **Vedika** | Documentation,  |
+| **Shilpi** (Lead) | Team Lead, ML Integration,Deployment |
+| **Priyanshu** | Data Engineer, Preprocessing backend |
+| **Dushyant** | Documentation, Evaluation, Explainable AI |
+| **Vedika** | Data Cleaning, Miscellaneous |
 
 Full responsibility breakdown: see [Team Responsibilities](#team-responsibilities) below.
 
